@@ -1,124 +1,111 @@
-# Intent Revenue OS — Initial Code Structure
+# Intent Revenue OS — Code Structure
 
-## Current repository
+## Current repository after Phase 1
 
 ```text
 .
 ├── .env.example
-├── .github/
-│   └── workflows/
-│       └── ci.yml
+├── .github/workflows/ci.yml
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── CODE_STRUCTURE.md
 │   ├── IMPLEMENTATION.md
 │   ├── PROJECT_PLAN.md
 │   └── ROADMAP.md
-├── public/
+├── drizzle/
+│   └── 0000_phase1_persistence.sql
+├── scripts/
+│   └── migrate.mjs
 ├── src/
 │   ├── app/
+│   │   ├── admin/page.tsx
 │   │   ├── api/
+│   │   │   ├── admin/audit/route.ts
+│   │   │   ├── admin/health/route.ts
 │   │   │   ├── analyze/route.ts
+│   │   │   ├── bootstrap/route.ts
 │   │   │   ├── health/route.ts
-│   │   │   └── leads/route.ts
+│   │   │   ├── leads/route.ts
+│   │   │   ├── products/route.ts
+│   │   │   ├── products/[id]/route.ts
+│   │   │   └── workspaces/route.ts
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   └── page.tsx
 │   ├── components/
+│   │   ├── admin-operations.tsx
 │   │   └── intent-dashboard.tsx
 │   ├── db/
+│   │   ├── client.ts
 │   │   └── schema.ts
-│   └── lib/
-│       ├── mock-data.ts
-│       ├── product-intelligence.ts
-│       ├── scoring.ts
-│       └── types.ts
+│   ├── lib/
+│   │   ├── auth.ts
+│   │   ├── http.ts
+│   │   ├── mock-data.ts
+│   │   ├── product-intelligence.ts
+│   │   ├── scoring.ts
+│   │   ├── slug.ts
+│   │   ├── types.ts
+│   │   └── url.ts
+│   └── repositories/
+│       ├── audit.ts
+│       ├── operations.ts
+│       ├── products.ts
+│       └── workspaces.ts
 ├── tests/
-│   └── scoring.test.ts
+│   ├── scoring.test.ts
+│   ├── slug.test.ts
+│   └── url.test.ts
 ├── Dockerfile
 ├── docker-compose.yml
 ├── drizzle.config.ts
-├── eslint.config.mjs
-├── next.config.ts
 ├── package.json
-├── postcss.config.mjs
-├── tsconfig.json
-└── vitest.config.ts
+└── ...
 ```
 
-## What the starter code currently demonstrates
+## Architectural boundaries
 
-### Intent Radar
-A high-density dashboard showing:
-- opportunity count
-- hot-intent count
-- approvals
-- average score
-- platform/community metadata
-- evidence
-- score dimensions
-- AI recommended action
-- editable approval workflow
+### `src/db`
+Connection and schema only. UI and route handlers do not issue SQL directly.
 
-### Product analysis
-`POST /api/analyze` currently returns deterministic demo intelligence from a supplied URL. It intentionally does not pretend to crawl or call an LLM yet.
+### `src/repositories`
+Tenant-aware persistence operations. Workspace membership checks live here so callers cannot accidentally bypass tenancy.
 
-### Leads API
-`GET /api/leads` exposes seeded cross-platform examples so the UI can be developed before live ingestion exists.
+### `src/lib/auth.ts`
+Single actor boundary. Today it supports explicit demo and trusted-header modes. Future Clerk/Auth0/SSO adapters should resolve into the same `Actor` shape.
 
-### Health API
-`GET /api/health` surfaces demo vs connected mode.
+### `src/app/api`
+HTTP validation and response mapping. Business persistence remains in repositories.
 
-### Scoring
-The scoring engine is deterministic, typed, and tested independently from the UI.
+### `src/components/admin-operations.tsx`
+A Phase 1 operator surface for bootstrap, DB health, persisted products, and audit events.
 
-### Data model
-The initial Drizzle schema already separates:
-- workspaces
-- products
-- source posts
-- product-specific leads
-- lead lifecycle events
+### `drizzle` + `scripts/migrate.mjs`
+SQL migrations are immutable after application. The runner records filename + SHA-256 checksum and refuses modified historical migrations.
 
-This separation is essential for future multi-product matching and reclassification.
+## Phase 2 expansion
 
-## Planned structure expansion
-
-As the project leaves demo mode, add:
+Add:
 
 ```text
 src/
-├── app/
-│   ├── (auth)/
-│   ├── (app)/
-│   ├── admin/
-│   └── api/
-├── domain/
-│   ├── products/
-│   ├── leads/
-│   ├── scoring/
-│   ├── ingestion/
-│   └── execution/
-├── repositories/
-├── services/
 ├── adapters/
 │   ├── sources/
-│   ├── ai/
-│   ├── email/
-│   └── billing/
+│   │   └── reddit/
+│   └── web/
+├── domain/
+│   └── ingestion/
+├── repositories/
+│   ├── source-posts.ts
+│   ├── source-queries.ts
+│   └── ingestion-runs.ts
+├── services/
+│   ├── product-extraction.ts
+│   └── query-generation.ts
 └── workers/
-```
-
-And later:
-
-```text
-extension/
-mcp/
-evals/
-fixtures/
-scripts/
+    └── ingestion-worker.ts
 ```
 
 ## Engineering rule
 
-Keep domain logic independent of UI frameworks and source-provider payloads. Next.js routes, Reddit providers, Chrome extension code, and MCP handlers should call the same domain services rather than reimplementing business rules.
+Keep domain logic independent of Next.js and provider payloads. Source adapters normalize external data before the rest of the system sees it; repository functions enforce tenant boundaries; UI code consumes stable application contracts.
