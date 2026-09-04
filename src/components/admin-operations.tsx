@@ -108,7 +108,17 @@ export function AdminOperations() {
   }, [workspaceId]);
 
   useEffect(() => {
-    void refresh();
+    let cancelled = false;
+
+    queueMicrotask(() => {
+      if (!cancelled) {
+        void refresh();
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
 
   async function bootstrap() {
