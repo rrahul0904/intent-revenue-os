@@ -1,6 +1,6 @@
 # Delivery Roadmap
 
-## Phase 0 — Foundation (this commit)
+## Phase 0 — Foundation ✅
 - Production-shaped Next.js app shell
 - Original high-signal Intent Radar UI
 - Product URL onboarding endpoint in deterministic demo mode
@@ -12,19 +12,35 @@
 - Docker + Compose
 - Unit tests + CI workflow
 
-## Phase 1 — Persistent application
-- Clerk/Auth.js workspace auth
-- Real Postgres repositories and migrations
-- Workspace/product CRUD
-- Audit trail and role model
-- Admin operations view
+## Phase 1 — Persistent application ✅ core foundation
+Implemented in `phase-1-persistent-saas`:
 
-## Phase 2 — Intelligence ingestion
-- Reddit source adapter first
+- Real Postgres runtime using `postgres` + Drizzle
+- Checksum-tracked SQL migration runner
+- Docker Compose database health checks and migration gate
+- Workspace and membership model
+- Product persistence and version-1 product profile persistence
+- Tenant-safe workspace/product repositories
+- Actor/session abstraction with explicit demo and trusted-header modes
+- Workspace bootstrap API
+- Workspace CRUD API
+- Product CRUD API
+- Audit event persistence
+- Database-aware public health endpoint
+- Tenant-scoped admin health/audit APIs
+- `/admin` operations/bootstrap UI
+- URL canonicalization and slug tests
+
+Production identity-provider provisioning (for example Clerk) remains a deployment integration choice; the application boundary is already isolated behind `requireActor()`.
+
+## Phase 2 — Intelligence ingestion ← NEXT
+- Source adapter contract
+- Reddit adapter first
 - Scheduled collection and durable queue
 - Deduplication and canonical source storage
 - Product-intelligence website extraction
 - Query expansion and community discovery
+- Ingestion run/failure observability
 
 ## Phase 3 — AI enrichment
 - Structured intent classifier
