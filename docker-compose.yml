@@ -7,12 +7,37 @@ services:
       POSTGRES_PASSWORD: postgres
     ports: ["5432:5432"]
     volumes: ["postgres_data:/var/lib/postgresql/data"]
-  web:
-    build: .
-    depends_on: [postgres]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d intent_revenue_os"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: npm run db:migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/intent_revenue_os
+    restart: "no"
+
+  web:
+    build: .
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/intent_revenue_os
+      AUTH_MODE: demo
+      DEMO_USER_ID: demo-founder
+      DEMO_USER_NAME: Demo Founder
+      ALLOW_DEMO_AUTH_IN_PRODUCTION: "true"
       APP_BASE_URL: http://localhost:3000
     ports: ["3000:3000"]
+
 volumes:
   postgres_data:
