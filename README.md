@@ -4,31 +4,40 @@ An AI-native revenue intelligence platform for discovering high-intent public co
 
 This project is an original implementation in the same problem category as ReplyHey. It does not copy ReplyHey source code, proprietary data, branding, or private implementation details.
 
-## Initial foundation
+## Current status
 
-The repository currently includes:
-
+### Phase 0 — product foundation
+Complete:
 - responsive Intent Radar dashboard
 - seeded Reddit / X / LinkedIn opportunities
 - explainable 0–100 lead scoring
-- score-dimension breakdown and evidence
-- approval / ignore lead workflow
-- credential-free product URL demo analysis
-- `GET /api/leads`
-- `GET /api/health`
-- `POST /api/analyze`
-- PostgreSQL / Drizzle domain schema
-- Docker + Docker Compose shape
-- unit tests
-- GitHub Actions CI
-- project plan, architecture, implementation guide, code structure, and roadmap
+- evidence + score dimensions
+- approval / ignore workflow
+- credential-free product analysis demo
+- health and lead APIs
+
+### Phase 1 — persistent SaaS foundation
+Implemented:
+- PostgreSQL persistence via Drizzle + `postgres`
+- checksum-protected SQL migrations
+- workspace + membership tenancy
+- tenant-safe product persistence
+- versioned product-profile storage
+- actor/session abstraction
+- audit events
+- persistent workspace/product APIs
+- database-aware health checks
+- admin bootstrap / operations UI
+- Docker migration-before-start workflow
+
+Open `/admin` after starting with Docker Compose to initialize the first workspace and persist a product.
 
 ## Documentation
 
 - [Project Plan](docs/PROJECT_PLAN.md)
 - [Technical Architecture](docs/ARCHITECTURE.md)
 - [Implementation Guide](docs/IMPLEMENTATION.md)
-- [Initial Code Structure](docs/CODE_STRUCTURE.md)
+- [Code Structure](docs/CODE_STRUCTURE.md)
 - [Delivery Roadmap](docs/ROADMAP.md)
 
 ## Core product flow
@@ -61,31 +70,53 @@ Outcome / Revenue Attribution
 Closed-loop Ranking
 ```
 
-## Current implementation status
+## Persistent API surface
 
-Phase 0 is an intentionally credential-free foundation. It demonstrates the product and domain model before external APIs are connected.
+```text
+POST /api/bootstrap
+GET  /api/workspaces
+POST /api/workspaces
 
-The next real engineering milestone is:
+GET  /api/products?workspaceId=...
+POST /api/products
+GET  /api/products/:id
+PATCH /api/products/:id
 
-**Product URL → persisted product intelligence → Reddit ingestion → candidate normalization → AI classification/evidence → persisted lead → Intent Radar.**
+GET  /api/admin/health
+GET  /api/admin/audit?workspaceId=...
+GET  /api/health
+```
+
+## Authentication boundary
+
+Phase 1 ships with two explicit adapters:
+
+- `AUTH_MODE=demo` — local development only
+- `AUTH_MODE=trusted-header` — accepts identity injected by a trusted upstream auth gateway
+
+Demo authentication is blocked in production unless `ALLOW_DEMO_AUTH_IN_PRODUCTION=true` is explicitly set. A managed identity provider such as Clerk can be added behind the same `requireActor()` boundary without changing repository/domain code.
 
 ## Local development
-
-Local development is optional; the repository can be developed directly through GitHub/Codex workflows.
 
 ```bash
 cp .env.example .env.local
 npm install
+npm run db:migrate
 npm run dev
 ```
 
-Open `http://localhost:3000`.
-
-## Docker
+## Docker — recommended first run
 
 ```bash
 docker compose up --build
 ```
+
+Compose waits for Postgres, runs migrations, and only then starts the Next.js service.
+
+Open:
+
+- `http://localhost:3000` — Intent Radar
+- `http://localhost:3000/admin` — persistent control plane
 
 ## Verification
 
@@ -95,6 +126,8 @@ npm test
 npm run build
 ```
 
-## Product direction
+## Next milestone
 
-The long-term goal is not merely an AI reply generator. The system should become an **Intent Revenue OS** that connects discovery, intent evidence, action approval, execution, attribution, and conversion learning.
+Phase 2 is the first live intelligence path:
+
+**Persisted product → real website extraction → signal generation → Reddit adapter → durable candidate queue → normalized source posts → ingestion observability.**
