@@ -156,6 +156,25 @@ export const ingestionRuns = pgTable("ingestion_runs", {
   index("ingestion_runs_query_created_idx").on(table.queryId, table.createdAt),
 ]);
 
+export const sourceCandidates = pgTable("source_candidates", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  queryId: uuid("query_id").notNull().references(() => sourceQueries.id, { onDelete: "cascade" }),
+  sourcePostId: uuid("source_post_id").notNull().references(() => sourcePosts.id, { onDelete: "cascade" }),
+  ingestionRunId: uuid("ingestion_run_id").references(() => ingestionRuns.id, { onDelete: "set null" }),
+  firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).defaultNow().notNull(),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("source_candidates_product_post_query_uidx").on(
+    table.productId,
+    table.sourcePostId,
+    table.queryId,
+  ),
+  index("source_candidates_workspace_last_seen_idx").on(table.workspaceId, table.lastSeenAt),
+  index("source_candidates_product_post_idx").on(table.productId, table.sourcePostId),
+]);
+
 export const queueJobs = pgTable("queue_jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
   workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
