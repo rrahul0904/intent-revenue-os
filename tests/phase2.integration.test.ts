@@ -7,6 +7,7 @@ import {
   enqueueJob,
 } from "../src/repositories/jobs";
 import { upsertSourcePost } from "../src/repositories/source-posts";
+import { recordSourceCandidate } from "../src/repositories/source-candidates";
 
 const integration = process.env.DATABASE_URL ? describe : describe.skip;
 const workspaceIds: string[] = [];
@@ -26,6 +27,83 @@ afterEach(async () => {
   for (const workspaceId of workspaceIds.splice(0)) {
     await sql.unsafe("delete from workspaces where id = $1::uuid", [workspaceId]);
   }
+
+  it("persists product-query lineage for a deduplicated source post", async () => {
+    const sql = getSql();
+    const workspaceId = randomUUID();
+    const productId = randomUUID();
+    const queryId = randomUUID();
+    const runId = randomUUID();
+    const externalId = "lineage-" + randomUUID();
+
+    workspaceIds.push(workspaceId);
+    sourceExternalIds.push(externalId);
+
+    await sql.unsafe(
+      "insert into workspaces (id, name, slug) values ($1::uuid, $2, $3)",
+      [workspaceId, "Lineage Workspace", "lineage-" + workspaceId.slice(0, 8)],
+    );
+    await sql.unsafe(
+      "insert into products (id, workspace_id, name, url, profile) " +
+        "values ($1::uuid, $2::uuid, $3, $4, $5::jsonb)",
+      [productId, workspaceId, "Lineage Product", "https://example.com", "{}"],
+    );
+    await sql.unsafe(
+      "insert into source_queries " +
+        "(id, product_id, platform, query_type, query_text, priority) " +
+        "values ($1::uuid, $2::uuid, 'reddit', 'recommendation', $3, 80)",
+      [queryId, productId, "recommendations workflow"],
+    );
+    await sql.unsafe(
+      "insert into ingestion_runs " +
+        "(id, workspace_id, product_id, query_id, platform, status) " +
+        "values ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'reddit', 'running')",
+      [runId, workspaceId, productId, queryId],
+    );
+
+    const post = await upsertSourcePost({
+      platform: "reddit",
+      externalId,
+      community: "testing",
+      author: "lineage-user",
+      title: "Recommendations for workflow software",
+      body: "We need a better intake workflow.",
+      url: "https://www.reddit.com/comments/" + externalId,
+      publishedAt: new Date("2026-09-10T00:00:00Z"),
+      contentHash: "c".repeat(64),
+      rawPayload: { id: externalId },
+    });
+
+    const first = await recordSourceCandidate({
+      workspaceId,
+      productId,
+      queryId,
+      sourcePostId: post.id,
+      ingestionRunId: runId,
+    });
+    const second = await recordSourceCandidate({
+      workspaceId,
+      productId,
+      queryId,
+      sourcePostId: post.id,
+      ingestionRunId: runId,
+    });
+
+    expect(second.id).toBe(first.id);
+
+    const rows = await sql.unsafe(
+      "select count(*)::int as count, product_id, query_id, source_post_id " +
+        "from source_candidates " +
+        "where product_id = $1::uuid and source_post_id = $2::uuid " +
+        "group by product_id, query_id, source_post_id",
+      [productId, post.id],
+    );
+
+    expect(Number(rows[0]?.count)).toBe(1);
+    expect(rows[0]?.product_id).toBe(productId);
+    expect(rows[0]?.query_id).toBe(queryId);
+    expect(rows[0]?.source_post_id).toBe(post.id);
+  });
 });
 
 integration("Phase 2 Postgres integration", () => {
