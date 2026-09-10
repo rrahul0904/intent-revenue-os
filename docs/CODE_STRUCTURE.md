@@ -1,6 +1,6 @@
 # Intent Revenue OS — Code Structure
 
-## Current repository after Phase 1
+## Repository architecture through Phase 2
 
 ```text
 .
@@ -109,3 +109,23 @@ src/
 ## Engineering rule
 
 Keep domain logic independent of Next.js and provider payloads. Source adapters normalize external data before the rest of the system sees it; repository functions enforce tenant boundaries; UI code consumes stable application contracts.
+
+## Phase 2 implemented modules
+
+```text
+drizzle/0001_phase2_intelligence_ingestion.sql
+scripts/worker.ts
+scripts/verify-db.mjs
+src/adapters/sources/{types,registry,reddit}.ts
+src/adapters/web/website-fetcher.ts
+src/services/{product-discovery,query-generation,scheduler,ingestion}.ts
+src/workers/{job-handlers,worker}.ts
+src/repositories/{jobs,product-intelligence,source-queries,source-posts,ingestion-runs}.ts
+src/app/api/products/[id]/{discover,queries}/route.ts
+src/app/api/ingestion/run/route.ts
+src/app/api/admin/intelligence/route.ts
+src/app/admin/intelligence/page.tsx
+src/components/intelligence-operations.tsx
+```
+
+The source adapter contract is provider-neutral. Phase 2 implements Reddit only; X/LinkedIn remain intentionally unimplemented rather than being represented by fake adapters.
