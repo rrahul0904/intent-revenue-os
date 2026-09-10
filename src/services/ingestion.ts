@@ -7,6 +7,7 @@ import {
 } from "@/repositories/ingestion-runs";
 import { enqueueJob } from "@/repositories/jobs";
 import { upsertSourcePost } from "@/repositories/source-posts";
+import { recordSourceCandidate } from "@/repositories/source-candidates";
 import {
   getSourceQuerySystem,
   markSourceQueryRun,
@@ -51,6 +52,14 @@ export async function runSourceIngestion(
     for (const item of page.items) {
       const persisted = await upsertSourcePost(item);
       if (persisted.inserted) insertedPosts += 1;
+
+      await recordSourceCandidate({
+        workspaceId: query.workspaceId,
+        productId: query.productId,
+        queryId: query.id,
+        sourcePostId: persisted.id,
+        ingestionRunId: run.id,
+      });
     }
 
     const nextRunAt = new Date(Date.now() + SIX_HOURS_MS);
