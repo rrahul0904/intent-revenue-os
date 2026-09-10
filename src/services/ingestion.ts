@@ -53,12 +53,26 @@ export async function runSourceIngestion(
       const persisted = await upsertSourcePost(item);
       if (persisted.inserted) insertedPosts += 1;
 
-      await recordSourceCandidate({
+      const candidate = await recordSourceCandidate({
         workspaceId: query.workspaceId,
         productId: query.productId,
         queryId: query.id,
         sourcePostId: persisted.id,
         ingestionRunId: run.id,
+      });
+
+      const classifierVersion =
+        process.env.CLASSIFIER_VERSION || "phase3-v1";
+      await enqueueJob({
+        workspaceId: query.workspaceId,
+        type: "CANDIDATE_CLASSIFY",
+        payload: {
+          candidateId: candidate.id,
+        },
+        idempotencyKey:
+          "candidate-classify:" + candidate.id + ":" + classifierVersion,
+        priority: 90,
+        maxAttempts: 2,
       });
     }
 
