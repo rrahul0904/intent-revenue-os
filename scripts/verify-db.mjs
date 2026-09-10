@@ -17,6 +17,7 @@ const requiredTables = [
   "website_snapshots",
   "source_queries",
   "source_posts",
+  "source_candidates",
   "ingestion_runs",
   "queue_jobs",
   "audit_events",
