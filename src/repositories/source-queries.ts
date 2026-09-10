@@ -1,4 +1,12 @@
-import { and, desc, eq } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  isNull,
+  lte,
+  or,
+} from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { memberships, products, sourceQueries } from "@/db/schema";
 import type { GeneratedSignalQuery } from "@/lib/types";
@@ -71,6 +79,33 @@ export async function getSourceQuerySystem(queryId: string) {
   return row;
 }
 
+export async function listDueSourceQueries(limit = 50) {
+  const db = getDb();
+  const now = new Date();
+
+  return db
+    .select({
+      id: sourceQueries.id,
+      productId: sourceQueries.productId,
+      workspaceId: products.workspaceId,
+      platform: sourceQueries.platform,
+      queryText: sourceQueries.queryText,
+      community: sourceQueries.community,
+      priority: sourceQueries.priority,
+      nextRunAt: sourceQueries.nextRunAt,
+    })
+    .from(sourceQueries)
+    .innerJoin(products, eq(sourceQueries.productId, products.id))
+    .where(
+      and(
+        eq(sourceQueries.enabled, true),
+        or(isNull(sourceQueries.nextRunAt), lte(sourceQueries.nextRunAt, now)),
+      ),
+    )
+    .orderBy(desc(sourceQueries.priority), asc(sourceQueries.createdAt))
+    .limit(Math.min(Math.max(limit, 1), 250));
+}
+
 export async function listSourceQueriesForActor(
   userId: string,
   productId: string,
@@ -102,6 +137,20 @@ export async function listSourceQueriesForActor(
     )
     .where(eq(sourceQueries.productId, productId))
     .orderBy(desc(sourceQueries.priority), desc(sourceQueries.createdAt));
+}
+
+export async function markSourceQueryScheduled(
+  queryId: string,
+  nextRunAt: Date,
+) {
+  const db = getDb();
+  await db
+    .update(sourceQueries)
+    .set({
+      nextRunAt,
+      updatedAt: new Date(),
+    })
+    .where(eq(sourceQueries.id, queryId));
 }
 
 export async function markSourceQueryRun(
