@@ -8,6 +8,7 @@ import {
   handleQueueJob,
 } from "@/workers/job-handlers";
 import { scheduleDueSourceQueries } from "@/services/scheduler";
+import { scheduleUnclassifiedCandidateClassifications } from "@/services/classification/scheduler";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -85,11 +86,20 @@ export async function runWorkerLoop(input: {
   );
 
   do {
-    const scheduler = await scheduleDueSourceQueries(maxJobs);
+    const [sourceScheduler, classificationScheduler] = await Promise.all([
+      scheduleDueSourceQueries(maxJobs),
+      scheduleUnclassifiedCandidateClassifications(maxJobs),
+    ]);
     const processed = await processWorkerBatch(input.workerId, maxJobs);
 
     if (input.once) {
-      return { processed, scheduler };
+      return {
+        processed,
+        scheduler: {
+          sources: sourceScheduler,
+          classifications: classificationScheduler,
+        },
+      };
     }
 
     if (processed === 0) {
