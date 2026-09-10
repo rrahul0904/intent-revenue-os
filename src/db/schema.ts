@@ -175,6 +175,54 @@ export const sourceCandidates = pgTable("source_candidates", {
   index("source_candidates_product_post_idx").on(table.productId, table.sourcePostId),
 ]);
 
+export const aiGenerations = pgTable("ai_generations", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  candidateId: uuid("candidate_id").references(() => sourceCandidates.id, { onDelete: "set null" }),
+  purpose: varchar("purpose", { length: 64 }).notNull(),
+  provider: varchar("provider", { length: 64 }).notNull(),
+  model: varchar("model", { length: 191 }).notNull(),
+  promptVersion: varchar("prompt_version", { length: 64 }).notNull(),
+  requestHash: varchar("request_hash", { length: 64 }).notNull(),
+  responseId: varchar("response_id", { length: 191 }),
+  status: varchar("status", { length: 32 }).notNull(),
+  inputTokens: integer("input_tokens").default(0).notNull(),
+  outputTokens: integer("output_tokens").default(0).notNull(),
+  cachedTokens: integer("cached_tokens").default(0).notNull(),
+  costMicros: integer("cost_micros").default(0).notNull(),
+  latencyMs: integer("latency_ms").default(0).notNull(),
+  structuredOutput: jsonb("structured_output"),
+  errorCode: varchar("error_code", { length: 96 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index("ai_generations_workspace_created_idx").on(table.workspaceId, table.createdAt),
+  index("ai_generations_candidate_idx").on(table.candidateId),
+]);
+
+export const candidateClassifications = pgTable("candidate_classifications", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
+  candidateId: uuid("candidate_id").notNull().references(() => sourceCandidates.id, { onDelete: "cascade" }),
+  generationId: uuid("generation_id").references(() => aiGenerations.id, { onDelete: "set null" }),
+  classifierVersion: varchar("classifier_version", { length: 64 }).notNull(),
+  relevant: boolean("relevant").notNull(),
+  confidence: integer("confidence").notNull(),
+  score: integer("score").notNull(),
+  rationale: text("rationale").notNull(),
+  evidence: text("evidence").notNull(),
+  breakdown: jsonb("breakdown").notNull(),
+  recommendedAction: varchar("recommended_action", { length: 32 }).notNull(),
+  draftReply: text("draft_reply").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("candidate_classifications_candidate_version_uidx").on(
+    table.candidateId,
+    table.classifierVersion,
+  ),
+  index("candidate_classifications_workspace_score_idx").on(table.workspaceId, table.score),
+  index("candidate_classifications_candidate_idx").on(table.candidateId),
+]);
+
 export const queueJobs = pgTable("queue_jobs", {
   id: uuid("id").defaultRandom().primaryKey(),
   workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id, { onDelete: "cascade" }),
@@ -201,6 +249,7 @@ export const leads = pgTable("leads", {
   id: uuid("id").defaultRandom().primaryKey(),
   productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
   sourcePostId: uuid("source_post_id").notNull().references(() => sourcePosts.id, { onDelete: "cascade" }),
+  classificationId: uuid("classification_id").references(() => candidateClassifications.id, { onDelete: "set null" }),
   score: integer("score").notNull(),
   status: leadStatusEnum("status").default("new").notNull(),
   rationale: text("rationale").notNull(),
