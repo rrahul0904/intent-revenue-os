@@ -37,7 +37,33 @@ services:
       DEMO_USER_NAME: Demo Founder
       ALLOW_DEMO_AUTH_IN_PRODUCTION: "true"
       APP_BASE_URL: http://localhost:3000
+      WEBSITE_FETCH_ENABLED: ${WEBSITE_FETCH_ENABLED:-true}
     ports: ["3000:3000"]
+
+  worker:
+    build:
+      context: .
+      target: builder
+    command: npm run worker
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/intent_revenue_os
+      WEBSITE_FETCH_ENABLED: ${WEBSITE_FETCH_ENABLED:-true}
+      WEBSITE_FETCH_TIMEOUT_MS: ${WEBSITE_FETCH_TIMEOUT_MS:-12000}
+      WEBSITE_FETCH_MAX_BYTES: ${WEBSITE_FETCH_MAX_BYTES:-1200000}
+      WEBSITE_FETCH_USER_AGENT: ${WEBSITE_FETCH_USER_AGENT:-SignalOS/0.3}
+      REDDIT_API_ENABLED: ${REDDIT_API_ENABLED:-false}
+      REDDIT_COMMERCIAL_ACCESS_APPROVED: ${REDDIT_COMMERCIAL_ACCESS_APPROVED:-false}
+      REDDIT_ACCESS_TOKEN: ${REDDIT_ACCESS_TOKEN:-}
+      REDDIT_USER_AGENT: ${REDDIT_USER_AGENT:-SignalOS/0.3}
+      REDDIT_SEARCH_LIMIT: ${REDDIT_SEARCH_LIMIT:-50}
+      WORKER_ID: ${WORKER_ID:-}
+      WORKER_POLL_MS: ${WORKER_POLL_MS:-2000}
+      WORKER_LEASE_SECONDS: ${WORKER_LEASE_SECONDS:-120}
+      WORKER_MAX_JOBS_PER_LOOP: ${WORKER_MAX_JOBS_PER_LOOP:-25}
 
 volumes:
   postgres_data:
