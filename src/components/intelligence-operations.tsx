@@ -47,6 +47,21 @@ type IngestionRun = {
   createdAt: string;
 };
 
+type SourceCandidate = {
+  id: string;
+  productName: string;
+  queryText: string;
+  platform: string;
+  community: string | null;
+  author: string | null;
+  title: string;
+  body: string;
+  url: string;
+  publishedAt: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+};
+
 type IntelligencePayload = {
   persistent: boolean;
   sources: {
@@ -64,6 +79,7 @@ type IntelligencePayload = {
   >;
   jobs: QueueJob[];
   runs: IngestionRun[];
+  candidates: SourceCandidate[];
 };
 
 async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
@@ -461,6 +477,62 @@ export function IntelligenceOperations() {
             )}
           </div>
         </article>
+      </section>
+
+      <section className="rounded-xl border border-slate-800 bg-slate-950 p-5">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Recent source candidates</h2>
+            <p className="mt-1 text-xs text-slate-500">
+              Product/query lineage for canonical source posts ready for Phase 3 classification.
+            </p>
+          </div>
+          <span className="font-mono text-xs text-slate-500">
+            {intel?.candidates.length ?? 0} recent
+          </span>
+        </div>
+        <div className="mt-4 grid gap-2">
+          {(intel?.candidates ?? []).slice(0, 20).map((candidate) => (
+            <a
+              key={candidate.id}
+              href={candidate.url}
+              target="_blank"
+              rel="noreferrer"
+              className="grid gap-3 rounded-lg border border-slate-800 bg-slate-900/50 p-3 hover:border-slate-700 md:grid-cols-[1fr_auto]"
+            >
+              <div>
+                <div className="mb-2 flex flex-wrap gap-2 text-[10px]">
+                  <span className="rounded bg-slate-800 px-2 py-1 uppercase text-slate-400">
+                    {candidate.platform}
+                  </span>
+                  <span className="rounded bg-slate-800 px-2 py-1 text-slate-400">
+                    {candidate.productName}
+                  </span>
+                  {candidate.community && (
+                    <span className="rounded bg-slate-800 px-2 py-1 text-slate-500">
+                      {candidate.community}
+                    </span>
+                  )}
+                </div>
+                <strong className="text-sm text-slate-200">{candidate.title}</strong>
+                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">
+                  {candidate.body || "No body text"}
+                </p>
+                <p className="mt-2 text-[10px] text-slate-600">
+                  Matched by: {candidate.queryText}
+                </p>
+              </div>
+              <time className="text-[10px] text-slate-600">
+                {new Date(candidate.lastSeenAt).toLocaleString()}
+              </time>
+            </a>
+          ))}
+          {(intel?.candidates.length ?? 0) === 0 && (
+            <p className="text-sm text-slate-500">
+              No candidate lineage has been recorded yet.
+            </p>
+          )}
+        </div>
       </section>
     </div>
   );
