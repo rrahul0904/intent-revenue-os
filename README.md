@@ -32,6 +32,27 @@ Implemented:
 
 Open `/admin` after starting with Docker Compose to initialize the first workspace and persist a product.
 
+### Phase 2 — intelligence ingestion
+Implemented:
+- live public-website extraction with redirect re-validation, response limits, and private-network blocking
+- persisted website snapshots and source hashes
+- deterministic product-intelligence refresh from website evidence
+- intent-signal/query generation
+- source-query scheduling
+- Postgres-backed durable queue with leases, idempotency, retries, and dead-letter states
+- separate Docker worker process
+- authenticated Reddit OAuth search adapter
+- explicit Reddit commercial-access/configuration gate; no anonymous scraping fallback
+- canonical source-post normalization and deduplication
+- cursor pagination through separate idempotent jobs
+- ingestion run/failure telemetry
+- `/admin/intelligence` control plane
+- migration verification in CI
+
+Creating a persistent product now enqueues a `PRODUCT_FETCH` job automatically. The worker turns that product URL into a website snapshot, refreshed product profile, and generated intent queries.
+
+Reddit collection remains intentionally disabled until the deployment has valid approved Data API access and explicitly sets the required environment variables.
+
 ## Documentation
 
 - [Project Plan](docs/PROJECT_PLAN.md)
@@ -39,6 +60,7 @@ Open `/admin` after starting with Docker Compose to initialize the first workspa
 - [Implementation Guide](docs/IMPLEMENTATION.md)
 - [Code Structure](docs/CODE_STRUCTURE.md)
 - [Delivery Roadmap](docs/ROADMAP.md)
+- [Phase 2 Ingestion Design](docs/PHASE_2_INGESTION.md)
 
 ## Core product flow
 
@@ -130,4 +152,4 @@ npm run build
 
 Phase 2 is the first live intelligence path:
 
-**Persisted product → real website extraction → signal generation → Reddit adapter → durable candidate queue → normalized source posts → ingestion observability.**
+**Persisted source posts → Phase 3 structured intent classification → evidence extraction → persisted qualified leads → live Intent Radar.**
