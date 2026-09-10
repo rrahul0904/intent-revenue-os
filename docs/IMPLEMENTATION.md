@@ -21,7 +21,7 @@
 - workspace membership + role checks enforced server-side
 
 ### Background work
-Start with a durable managed queue/workflow system. The worker boundary must be separate from request/response APIs even if deployed from the same monorepo.
+Phase 2 implements a durable PostgreSQL queue with a separate worker boundary. Jobs use idempotency keys, `FOR UPDATE SKIP LOCKED` leasing, retry backoff, lease expiry, and dead-letter state. The design can later migrate to a managed queue without changing the job-handler contracts.
 
 Job categories:
 - PRODUCT_FETCH
@@ -286,8 +286,10 @@ Structured AI output:
 
 Convert these into persisted SourceQuery rows.
 
-### Step 5 — Reddit ingestion
-Define interface:
+### Step 5 — Reddit ingestion ✅ Phase 2
+The provider-neutral source adapter contract and authenticated Reddit OAuth adapter are implemented. Live Reddit access stays disabled until the deployment explicitly confirms approved API/commercial access and supplies credentials.
+
+Interface:
 
 ```ts
 interface SourceAdapter {
@@ -298,7 +300,7 @@ interface SourceAdapter {
 
 The domain must not depend on provider-specific Reddit payload shapes.
 
-### Step 6 — deduplication
+### Step 6 — deduplication ✅ Phase 2
 For every normalized result:
 1. compute canonical external key
 2. upsert SourcePost
