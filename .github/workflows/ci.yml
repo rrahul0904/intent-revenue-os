@@ -3,15 +3,41 @@ on:
   pull_request:
   push:
     branches: [main]
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: intent_revenue_os
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d intent_revenue_os"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/intent_revenue_os
+      AUTH_MODE: demo
+      DEMO_USER_ID: ci-user
+      DEMO_USER_NAME: CI User
+      ALLOW_DEMO_AUTH_IN_PRODUCTION: "true"
+      WEBSITE_FETCH_ENABLED: "false"
+      REDDIT_API_ENABLED: "false"
+      REDDIT_COMMERCIAL_ACCESS_APPROVED: "false"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - run: npm install --no-audit --no-fund
+      - run: npm run db:migrate
+      - run: npm run db:verify
       - run: npm run lint
       - run: npm test
       - run: npm run build

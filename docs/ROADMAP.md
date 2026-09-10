@@ -33,16 +33,28 @@ Implemented in `phase-1-persistent-saas`:
 
 Production identity-provider provisioning (for example Clerk) remains a deployment integration choice; the application boundary is already isolated behind `requireActor()`.
 
-## Phase 2 — Intelligence ingestion ← NEXT
+## Phase 2 — Intelligence ingestion ✅ implementation complete
 - Source adapter contract
-- Reddit adapter first
-- Scheduled collection and durable queue
-- Deduplication and canonical source storage
-- Product-intelligence website extraction
-- Query expansion and community discovery
+- Authenticated Reddit OAuth adapter
+- Explicit API/commercial-access configuration gate
+- Live website extraction with SSRF/private-network defenses
+- Persisted website snapshots and source hashes
+- Deterministic product-intelligence refresh
+- Intent query generation
+- Scheduled collection
+- Durable Postgres queue with leases, retries and dead-letter state
+- Canonical source-post normalization
+- Database-enforced source identity + deduplication
+- Cursor pagination through idempotent continuation jobs
 - Ingestion run/failure observability
+- Admin intelligence control plane
+- CI migration/schema verification
 
-## Phase 3 — AI enrichment
+External Reddit collection is deployment-gated: it becomes active only when approved Data API credentials and explicit enablement are supplied. The code intentionally has no anonymous scraping fallback.
+
+Community recommendation/rule intelligence is carried into the later policy-intelligence workstream rather than being inferred unsafely in Phase 2.
+
+## Phase 3 — AI enrichment ← NEXT
 - Structured intent classifier
 - Evidence extraction
 - Draft generation

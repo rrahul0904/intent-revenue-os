@@ -11,20 +11,29 @@ export default function AdminPage() {
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="mb-2 text-xs font-semibold tracking-[0.18em] text-violet-400">
-            PHASE 1 CONTROL PLANE
+            OPERATIONS CONTROL PLANE
           </p>
           <h1 className="text-3xl font-semibold tracking-tight">Operations</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-400">
-            Bootstrap the tenant, verify Postgres, create products, and inspect the
-            audit trail before live ingestion is enabled.
+            Bootstrap tenants, verify Postgres, manage products, and inspect the
+            audit trail. Phase 2 ingestion controls are available in the
+            intelligence workspace.
           </p>
         </div>
-        <Link
-          href="/"
-          className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
-        >
-          Back to Intent Radar
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/intelligence"
+            className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+          >
+            Intelligence ingestion
+          </Link>
+          <Link
+            href="/"
+            className="rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800"
+          >
+            Intent Radar
+          </Link>
+        </div>
       </div>
       <AdminOperations />
     </main>

@@ -9,6 +9,10 @@ export interface ProductProfile {
   pains: string[];
   buyingSignals: string[];
   competitors: string[];
+  categoryTerms?: string[];
+  sourceTitle?: string;
+  sourceDescription?: string;
+  sourceContentHash?: string;
 }
 
 export interface ScoreBreakdown {
@@ -36,4 +40,24 @@ export interface Lead {
   recommendedAction: "public_reply" | "dm" | "observe";
   draftReply: string;
   breakdown: ScoreBreakdown;
+}
+
+export interface NormalizedSourcePost {
+  platform: Platform;
+  externalId: string;
+  community: string | null;
+  author: string | null;
+  title: string;
+  body: string;
+  url: string;
+  publishedAt: Date;
+  contentHash: string;
+  rawPayload: unknown;
+}
+
+export interface GeneratedSignalQuery {
+  queryType: "pain" | "recommendation" | "switching" | "competitor" | "category";
+  queryText: string;
+  community?: string | null;
+  priority: number;
 }
