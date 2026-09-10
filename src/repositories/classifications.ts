@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { candidateClassifications } from "@/db/schema";
 import { getDb } from "@/db/client";
 import type { FinalIntentClassification } from "@/domain/classification/types";
@@ -12,12 +12,15 @@ export async function getCandidateClassification(
   const [row] = await db
     .select()
     .from(candidateClassifications)
-    .where(eq(candidateClassifications.candidateId, candidateId))
-    .orderBy(desc(candidateClassifications.createdAt))
+    .where(
+      and(
+        eq(candidateClassifications.candidateId, candidateId),
+        eq(candidateClassifications.classifierVersion, classifierVersion),
+      ),
+    )
     .limit(1);
 
-  if (row?.classifierVersion === classifierVersion) return row;
-  return undefined;
+  return row;
 }
 
 export async function persistCandidateClassification(input: {
