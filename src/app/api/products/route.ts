@@ -3,6 +3,7 @@ import { z } from "zod";
 import { hasDatabase } from "@/db/client";
 import { requireActor } from "@/lib/auth";
 import { apiError } from "@/lib/http";
+import { enqueueJob } from "@/repositories/jobs";
 import {
   createProductForActor,
   listProductsForActor,
@@ -13,6 +14,10 @@ const createProductSchema = z.object({
   url: z.string().url(),
   name: z.string().trim().min(1).max(160).optional(),
 });
+
+function hourBucket(date: Date): string {
+  return date.toISOString().slice(0, 13).replace(/[-T:]/g, "");
+}
 
 export async function GET(request: Request) {
   if (!hasDatabase()) {
@@ -58,7 +63,26 @@ export async function POST(request: Request) {
       ...parsed.data,
     });
 
-    return NextResponse.json({ data: product }, { status: 201 });
+    const discovery = await enqueueJob({
+      workspaceId: product.workspaceId,
+      type: "PRODUCT_FETCH",
+      payload: { productId: product.id },
+      idempotencyKey:
+        "product-fetch:" + product.id + ":" + hourBucket(new Date()),
+      priority: 100,
+    });
+
+    return NextResponse.json(
+      {
+        data: product,
+        discovery: {
+          jobId: discovery.job.id,
+          created: discovery.created,
+          status: discovery.job.status,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     return apiError(error);
   }
