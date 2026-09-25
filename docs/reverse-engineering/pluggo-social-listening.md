@@ -19,16 +19,44 @@ The originating Reddit post describes a tool that starts from a target customer'
 
 Current Pluggo public materials position the product around AI-assisted social listening, brand monitoring, opportunity detection, community discovery, research, Slack alerts, and continuous filtering from operator feedback.
 
-## 3. Observable end-to-end journey
+## 3. Reddit thread feedback — treated as product evidence
+
+The originating Reddit thread was reviewed beyond the post body. The comments materially change the implementation requirements:
+
+### Evidence of what works
+- Multiple users received niche-specific Reddit/X community lists and some explicitly said the recommendations were relevant.
+- Pluggo generated shareable per-site result pages such as `/sites/<normalized-domain>`, which means community discovery is not just an internal setup step; it is also a presentable/exportable result surface.
+- The creator repeatedly asked whether returned communities were relevant, showing that human relevance feedback is part of the intended product-learning loop rather than a cosmetic rating.
+
+### Observed failure modes
+- For EasyHeadshots, the creator openly noted that some returned communities did not look very relevant. The implementation therefore needs per-result evidence, confidence, rejection feedback and measurable ranking quality rather than treating discovery output as ground truth.
+- For Livly Maps, the creator said Pluggo appeared to misunderstand the product and suspected changing landing-page text. Product intelligence must therefore preserve extraction evidence, handle dynamic/client-rendered pages, and allow users to correct the inferred product/audience profile before discovery runs.
+- For Prodcast, the creator said the tool could not scrape the site; the product owner suspected Vercel scrape protection. URL ingestion needs a visible fetch/extraction state, deterministic failure reason, retry/fallback policy and a manual description/input path. A failed fetch must not silently produce low-quality communities.
+- One commenter rejected Google-only sign-in. Authentication must not be designed around a single identity provider; the clean-room product should retain a provider-neutral identity boundary.
+
+### Platform and directory feedback
+- A commenter asked about Facebook groups. The creator replied that the app could search Facebook, Discord and Mastodon communities and that Slack-community discovery was being added.
+- In another creator reply, Pluggo was described as already having real-time Slack alerts while its community database was expanding for Slack, Discord and Mastodon; the creator also noted the lack of a centralized Slack-workspace directory.
+- These statements are historical creator evidence, not proof that every network remained simultaneously supported. Current terms explicitly describe X/Twitter, Reddit and Slack integrations, while current public community pages still expose directories spanning Reddit, Discord, Facebook, Twitter and Mastodon. We therefore separate **community discovery/catalog coverage** from **certified live monitoring adapters**.
+
+### Product interpretation from the thread
+The thread shows two distinct loops that should remain separate in our architecture:
+
+1. **Audience/community discovery:** understand a product, locate likely communities, rank them, and expose a shareable result set.
+2. **Conversation monitoring:** monitor approved sources/communities, classify high-signal conversations, deliver opportunities quickly, and learn from feedback.
+
+The original implementation must not collapse those into one opaque LLM call. Each stage needs its own evidence, confidence, correction and replay semantics.
+
+## 5. Observable end-to-end journey
 
 ### A. Product context
-A user supplies company/product context, commonly beginning with a URL or brand/problem description.
+A user supplies company/product context, commonly beginning with a URL or brand/problem description. URL understanding must expose its evidence and confidence, support dynamic/client-rendered pages, and provide a manual correction/fallback path when extraction is blocked or the inferred audience is wrong.
 
 ### B. Monitoring setup
 The system converts the context into monitoring terms, source queries, target-community hypotheses, and analysis rules. The user can refine what counts as relevant.
 
 ### C. Community discovery
-The product searches for communities/pages/groups where the target audience is likely to discuss the relevant problem. Results can be ranked and surfaced as reusable monitoring targets.
+The product searches for communities/pages/groups where the target audience is likely to discuss the relevant problem. Results can be ranked and surfaced as reusable monitoring targets or shareable result pages. Each candidate must retain evidence, score dimensions and user feedback because the Reddit thread contains both strong matches and acknowledged relevance misses.
 
 ### D. Source acquisition
 Eligible public sources are monitored on a schedule or through supported provider mechanisms. Public Pluggo surfaces reference several social/community networks over time; the implementation must treat each source as an independent adapter with its own access policy rather than assume universal scraping access.
@@ -54,7 +82,7 @@ Save/ignore/replied and positive/negative signal feedback should become explicit
 ### K. Research and analytics
 The product family includes research-oriented surfaces plus analytics around mentions, sentiment, communities/sources, competitors/trends and share-of-voice style measurements.
 
-## 4. Product surfaces to recreate as capabilities
+## 5. Product surfaces to recreate as capabilities
 
 1. Intent/opportunity radar
 2. Community discovery/search
@@ -70,7 +98,7 @@ The product family includes research-oriented surfaces plus analytics around men
 12. Selected public discovery/free-tool surfaces
 13. Workspace, auth, audit, integration and billing/admin boundaries
 
-## 5. Canonical mapping
+## 6. Canonical mapping
 
 Pluggo should not become a new standalone repository.
 
@@ -95,7 +123,7 @@ Adjacent repositories are references, not the destination:
 - rrahul0904/tractionmesh: broader growth/distribution operating system;
 - rrahul0904/social-growth-os: broader content/social publishing loop.
 
-## 6. Proposed domain model
+## 7. Proposed domain model
 
 These names describe our clean-room implementation, not Pluggo internals.
 
@@ -141,7 +169,7 @@ These names describe our clean-room implementation, not Pluggo internals.
 - ShareOfVoiceSnapshot
 - TrendWindow
 
-## 7. Key service boundaries
+## 8. Key service boundaries
 
 ### ProductIntelligenceService
 Turns product evidence into durable context and versioned monitoring inputs.
@@ -182,17 +210,17 @@ Builds mention, sentiment, community/source, share-of-voice, funnel and outcome 
 ### ResearchService
 Runs bounded evidence-backed investigations and stores report provenance.
 
-## 8. Adapter strategy
+## 9. Adapter strategy
 
 ### First certified source: Reddit
-Reuse the existing OAuth adapter and commercial-access gate. Phase A must work with deterministic fixtures when live credentials are absent.
+Reuse the existing OAuth adapter and commercial-access gate. Phase A must work with deterministic fixtures when live credentials are absent. Keep community-directory/discovery coverage separate from live-monitoring certification.
 
 ### Later sources
 X, Hacker News, Bluesky, Facebook, LinkedIn, YouTube, Discord, Mastodon, Slack/community directories or other networks can be considered only when the deployment has a compliant provider/API path, appropriate scopes and clear commercial usage permission.
 
 There must be no silent anonymous-scraping fallback when an authenticated/commercial API boundary is required.
 
-## 9. Safety, security and reliability
+## 10. Safety, security and reliability
 
 - Social posts are untrusted input and must never become system/tool instructions.
 - Strip or isolate prompt-like content before model/tool orchestration.
@@ -207,7 +235,7 @@ There must be no silent anonymous-scraping fallback when an authenticated/commer
 - Store AI/rule versions with classification receipts so historical decisions remain explainable.
 - Make Slack/webhook actions replay-safe and auditable.
 
-## 10. Feature delta from current Intent Revenue OS
+## 11. Feature delta from current Intent Revenue OS
 
 ### Already present
 - product intelligence;
@@ -233,12 +261,15 @@ There must be no silent anonymous-scraping fallback when an authenticated/commer
 - share-of-voice and trend windows;
 - research copilot/reports;
 - additional compliant source adapters;
-- optional public community directory and free research tools.
+- dynamic/blocked-site extraction diagnostics plus manual product-profile correction;
+- community relevance feedback, confidence and evaluation metrics;
+- provider-neutral authentication rather than Google-only sign-in;
+- optional public/shareable community directory and per-product result pages.
 
-## 11. Phased implementation
+## 12. Phased implementation
 
 ### Phase A — community and evidence contracts
-Scope: no new external side effects.
+Scope: no new external side effects. Incorporate the Reddit-thread failure modes from the start rather than deferring them to UI polish.
 
 Deliver:
 - Community, SourceCommunity, CommunityCandidate and CommunityEvidence;
@@ -255,7 +286,9 @@ Acceptance:
 - scoring is deterministic for fixed inputs;
 - every accepted/rejected decision has a receipt;
 - source provenance is retained;
-- exact-head tests/CI pass.
+- exact-head tests/CI pass;
+- blocked/misread product-input fixtures fail visibly rather than emitting unqualified discovery results;
+- community feedback can reject a candidate without deleting the original score/evidence receipt.
 
 ### Phase B — classification, rules and inbox
 Deliver structured relevance/intent/sentiment decisions, custom rules, filters and full inbox lifecycle.
@@ -275,7 +308,7 @@ Deliver research reports/citations, community directory/search and selected free
 ### Phase G — additional source adapters
 Add adapters one by one with explicit authentication, ToS/access checks, fixtures, rate limits and production certification.
 
-## 12. Phase A implementation shape
+## 13. Phase A implementation shape
 
 Suggested additions should follow the repository's existing architecture instead of creating a parallel stack:
 
@@ -290,10 +323,10 @@ Suggested additions should follow the repository's existing architecture instead
 
 The first PR after this dossier should remain bounded to Phase A. Slack, outbound replies, analytics and multi-source provider work should be separate follow-on slices.
 
-## 13. Evidence notes
+## 14. Evidence notes
 
 Public evidence reviewed on 2026-09-24:
-- originating r/SideProject thread;
+- full originating r/SideProject post and visible comment/reply thread, including creator replies about relevance misses, dynamic-page misunderstanding, scrape failures, Facebook/Discord/Mastodon/Slack community coverage and Slack alerts;
 - Pluggo public homepage and product pages;
 - Pluggo public community-result pages;
 - Pluggo social-listening/community-discovery material;
@@ -302,6 +335,6 @@ Public evidence reviewed on 2026-09-24:
 
 Public materials from different dates list somewhat different source-network sets. Treat that as product evolution and configuration variability; do not hard-code a claim that every historical/current network is simultaneously active.
 
-## 14. Definition of truthful status
+## 15. Definition of truthful status
 
 This branch proves the donor has been mapped and the implementation delta is defined. It does **not** prove Pluggo parity, hosted behavior, live Slack delivery, live multi-platform monitoring, production provider credentials, or Phase A runtime implementation.
