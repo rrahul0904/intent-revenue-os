@@ -47,7 +47,7 @@ The thread shows two distinct loops that should remain separate in our architect
 
 The original implementation must not collapse those into one opaque LLM call. Each stage needs its own evidence, confidence, correction and replay semantics.
 
-## 5. Observable end-to-end journey
+## 4. Observable end-to-end journey
 
 ### A. Product context
 A user supplies company/product context, commonly beginning with a URL or brand/problem description. URL understanding must expose its evidence and confidence, support dynamic/client-rendered pages, and provide a manual correction/fallback path when extraction is blocked or the inferred audience is wrong.
