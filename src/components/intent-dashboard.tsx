@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Activity, ArrowUpRight, Bot, Check, CircleGauge, Globe2, Inbox, Radar, Search, Send, Settings2, ShieldCheck, Sparkles, Target, Zap } from "lucide-react";
 import { demoLeads, demoProduct } from "@/lib/mock-data";
@@ -65,7 +66,10 @@ export function IntentDashboard() {
     <main className="app-shell">
       <aside className="sidebar">
         <div className="brand"><div className="brand-mark"><Zap size={17} /></div><div><strong>SignalOS</strong><span>Intent Revenue OS</span></div></div>
-        <nav>{nav.map(([Icon, label], index) => <button className={index === 0 ? "nav-item active" : "nav-item"} key={label}><Icon size={17}/><span>{label}</span></button>)}</nav>
+        <nav>{nav.map(([Icon, label], index) => label === "AI Agents"
+          ? <Link className="nav-item" href="/distribution" key={label}><Icon size={17}/><span>{label}</span></Link>
+          : <button className={index === 0 ? "nav-item active" : "nav-item"} key={label}><Icon size={17}/><span>{label}</span></button>
+        )}</nav>
         <div className="sidebar-bottom"><button className="nav-item"><Settings2 size={17}/><span>Settings</span></button><div className="workspace"><span>RS</span><div><strong>Founder workspace</strong><small>Demo mode</small></div></div></div>
       </aside>
 
