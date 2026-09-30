@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowLeft,
   Bot,
@@ -60,7 +60,9 @@ export function DistributionWorkspace() {
   const [selectedProspectId, setSelectedProspectId] = useState(
     prospects[0]?.id ?? "",
   );
-  const [editor, setEditor] = useState("");
+  const [editor, setEditor] = useState(
+    () => buildReviewQueue(demoDistributionAgent, demoProspects)[0]?.body ?? "",
+  );
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState(
     "Demo mode: discovery and send actions are simulated. No provider receives a message.",
@@ -94,10 +96,6 @@ export function DistributionWorkspace() {
     ? drafts.find((draft) => draft.prospectId === selectedProspect.id)
     : undefined;
 
-  useEffect(() => {
-    setEditor(selectedDraft?.body ?? "");
-  }, [selectedDraft?.id, selectedDraft?.revision, selectedDraft?.body]);
-
   const approvedCount = drafts.filter(
     (draft) => draft.status === "approved",
   ).length;
@@ -111,12 +109,19 @@ export function DistributionWorkspace() {
     );
   }
 
+  function selectProspect(prospectId: string) {
+    setSelectedProspectId(prospectId);
+    const draft = drafts.find((item) => item.prospectId === prospectId);
+    setEditor(draft?.body ?? "");
+  }
+
   function runSyntheticDiscovery() {
     const nextProspects = rankProspects(demoProspects);
     const nextDrafts = buildReviewQueue(demoDistributionAgent, nextProspects);
     setProspects(nextProspects);
     setDrafts(nextDrafts);
     setSelectedProspectId(nextProspects[0]?.id ?? "");
+    setEditor(nextDrafts[0]?.body ?? "");
     setReceipts([]);
     const stamp = new Date().toISOString();
     setLastRunAt(stamp);
@@ -332,7 +337,7 @@ export function DistributionWorkspace() {
                         : styles.prospectRow
                     }
                     key={prospect.id}
-                    onClick={() => setSelectedProspectId(prospect.id)}
+                    onClick={() => selectProspect(prospect.id)}
                   >
                     <div
                       className={`${styles.score} ${scoreClass(
