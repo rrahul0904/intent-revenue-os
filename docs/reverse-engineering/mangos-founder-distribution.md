@@ -1,4 +1,4 @@
-# RE-346 — Mangos AI donor research → SignalOS founder distribution
+# RE-349 — Mangos AI donor research → SignalOS founder distribution
 
 Status: researched and mapped on 2026-09-30. This is a clean-room capability study based on public product pages, public documentation, and public Reddit discussion. It does **not** copy Mangos AI source code, prompts, datasets, UI assets, private implementation details, branding, or proprietary model behavior.
 
